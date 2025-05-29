@@ -25,7 +25,7 @@
 
 //   return { chunks: chunks.length };
 // };
-
+// test
 import pdfParse from 'pdf-parse';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';

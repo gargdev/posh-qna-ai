@@ -1,53 +1,81 @@
-// import pdfParse from 'pdf-parse';
-// import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
-// import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-// import { FaissStore } from '@langchain/community/vectorstores/faiss';
+import pdfParse from "pdf-parse";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { FaissStore } from "@langchain/community/vectorstores/faiss";
+import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 
-// import { MemoryVectorStore } from 'langchain/vectorstores/memory'; // For dev testing
+console.log("📚 Initializing PDF service...");
 
-// export const processPdfBuffer = async (buffer: Buffer) => {
-//   const data = await pdfParse(buffer);
+const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
+const HF_TOKEN = process.env.HF_API_TOKEN;
 
-//   const splitter = new RecursiveCharacterTextSplitter({
-//     chunkSize: 500,
-//     chunkOverlap: 50,
-//   });
+console.log("⚙️ Configuration:");
+console.log("   - Embedding Model:", HF_EMBED_MODEL);
+console.log("   - HF Token Status:", HF_TOKEN ? "✅ Set" : "❌ Not set");
 
-//   const chunks = await splitter.createDocuments([data.text]);
+if (!process.env.HF_API_TOKEN) {
+  console.error("❌ ERROR: HF_API_TOKEN is not defined!");
+  throw new Error("HF_API_TOKEN is not defined!");
+}
 
-//   const embeddings = new OpenAIEmbeddings(); // uses OPENAI_API_KEY from env
-
-//   // FAISS store (in-memory for now)
-//   const vectorStore = await FaissStore.fromDocuments(chunks, embeddings);
-
-//   // Save FAISS index to disk if needed
-//   await vectorStore.save('./vector-db/faiss-index');
-
-//   return { chunks: chunks.length };
-// };
-// test
-import pdfParse from 'pdf-parse';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { FaissStore } from '@langchain/community/vectorstores/faiss';
-
-import { MemoryVectorStore } from 'langchain/vectorstores/memory'; // For dev testing
+// BEFORE embedding, add a debug log:
+console.log("⚙️ Calling HF embedding for model:", HF_EMBED_MODEL);
 
 export const processPdfBuffer = async (buffer: Buffer) => {
-  const data = await pdfParse(buffer);
+  console.log("\n🔄 Starting PDF processing...");
+  console.log("   Buffer size:", buffer.length, "bytes");
 
-  const splitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 500,
-    chunkOverlap: 50,
-  });
+  try {
+    console.log("📄 Parsing PDF content...");
+    const { text } = await pdfParse(buffer);
+    console.log("✅ PDF parsed successfully");
+    console.log("   - Extracted text length:", text.length, "characters");
+    console.log(
+      "   - First 100 chars:",
+      text.slice(0, 100).replace(/\n/g, " "),
+    );
 
-  const chunks = await splitter.createDocuments([data.text]);
+    console.log("\n📋 Splitting text into chunks...");
+    const splitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 500,
+      chunkOverlap: 50,
+    });
+    console.log("   - Chunk size:", 500);
+    console.log("   - Chunk overlap:", 50);
 
-  const embeddings = new OpenAIEmbeddings(); // uses OPENAI_API_KEY from env
+    const docs = await splitter.createDocuments([text]);
+    console.log("✅ Text split successfully");
+    console.log("   - Number of chunks:", docs.length);
+    console.log(
+      "   - First chunk sample:",
+      docs[0]?.pageContent?.slice(0, 100),
+    );
 
-  const vectorStore = await FaissStore.fromDocuments(chunks, embeddings);
+    console.log("\n🧠 Initializing embeddings model...");
+    const embeddings = new HuggingFaceInferenceEmbeddings({
+      apiKey: HF_TOKEN,
+      model: HF_EMBED_MODEL,
+    });
+    console.log("✅ Embeddings model initialized");
 
-  await vectorStore.save('./vector-db/faiss-index');
+    console.log("\n💾 Creating vector store...");
+    const vectorStore = await FaissStore.fromDocuments(docs, embeddings);
+    console.log("✅ Vector store created");
 
-  return { chunks: chunks.length };
+    console.log("\n💾 Saving vector store to disk...");
+    await vectorStore.save("./vector-db/faiss-index");
+    console.log("✅ Vector store saved successfully");
+
+    console.log("\n✨ PDF processing completed successfully!");
+    return { chunks: docs.length };
+  } catch (error) {
+    console.error("\n❌ Error in processPdfBuffer:");
+    if (error instanceof Error) {
+      console.error("   Type:", error.constructor.name);
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
+    } else {
+      console.error("   Unknown error:", error);
+    }
+    throw error;
+  }
 };

@@ -2,8 +2,14 @@ import dotenv from "dotenv";
 console.log("⚙️ Loading environment variables...");
 dotenv.config();
 
-import express, { Request, Response, NextFunction } from "express";
-import session from "express-session";
+import express, {
+  Request,
+  Response,
+  NextFunction,
+  RequestHandler,
+  ErrorRequestHandler,
+} from "express";
+const session = require("express-session");
 import passport from "passport";
 import helmet from "helmet";
 import cors from "cors";
@@ -118,16 +124,16 @@ app.use(passport.session());
 console.log("✅ Passport authentication configured");
 
 // Global Cache Control
-app.use((req: Request, res: Response, next: NextFunction) => {
+const cacheControlMiddleware: RequestHandler = (req, res, next) => {
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate, private",
   );
   next();
-});
+};
 
 // Request Logging Middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
+const requestLoggingMiddleware: RequestHandler = (req, res, next) => {
   if (process.env.NODE_ENV !== "production") {
     console.log(`📥 ${req.method} ${req.url}`);
     console.log("Headers:", JSON.stringify(req.headers, null, 2));
@@ -137,7 +143,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     }
   }
   next();
-});
+};
 
 // API Routes
 console.log("🛣️ Mounting API routes...");
@@ -146,7 +152,7 @@ console.log("✅ API routes mounted");
 
 // Health Check Endpoint
 console.log("🏥 Setting up health check endpoint...");
-app.get("/api/health", (_req: Request, res: Response) => {
+const healthCheckHandler: RequestHandler = (_req, res) => {
   console.log("💓 Health check requested");
   res.json({
     status: "OK",
@@ -154,10 +160,16 @@ app.get("/api/health", (_req: Request, res: Response) => {
     environment: process.env.NODE_ENV,
   });
   console.log("✅ Health check response sent");
-});
+};
 
 // Error Handling Middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+console.log("❌ Setting up error handling middleware...");
+const errorHandler: ErrorRequestHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   console.error("❌ Error:", err);
   res.status(500).json({
     error:
@@ -165,7 +177,12 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
         ? "Internal Server Error"
         : err.message,
   });
-});
+};
+
+app.use(cacheControlMiddleware);
+app.use(requestLoggingMiddleware);
+app.get("/api/health", healthCheckHandler);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

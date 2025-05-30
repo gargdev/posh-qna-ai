@@ -9,6 +9,7 @@ console.log("📚 Initializing PDF service...");
 const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
 const HF_TOKEN = process.env.HF_API_TOKEN;
 const INDEX_PATH = "./vector-db/faiss-index";
+const METADATA_PATH = "./vector-db/pdf-metadata.json";
 
 console.log("⚙️ Configuration:");
 console.log("   - Embedding Model:", HF_EMBED_MODEL);
@@ -22,7 +23,34 @@ if (!process.env.HF_API_TOKEN) {
 // BEFORE embedding, add a debug log:
 console.log("⚙️ Calling HF embedding for model:", HF_EMBED_MODEL);
 
-export const processPdfBuffer = async (buffer: Buffer) => {
+function savePdfMetadata(filename: string) {
+  let metadata: any[] = [];
+  if (fs.existsSync(METADATA_PATH)) {
+    try {
+      metadata = JSON.parse(fs.readFileSync(METADATA_PATH, "utf-8"));
+    } catch (e) {
+      metadata = [];
+    }
+  }
+  metadata.push({
+    filename,
+    uploadedAt: new Date().toISOString(),
+  });
+  fs.writeFileSync(METADATA_PATH, JSON.stringify(metadata, null, 2));
+}
+
+export function getPdfMetadata() {
+  if (fs.existsSync(METADATA_PATH)) {
+    try {
+      return JSON.parse(fs.readFileSync(METADATA_PATH, "utf-8"));
+    } catch (e) {
+      return [];
+    }
+  }
+  return [];
+}
+
+export const processPdfBuffer = async (buffer: Buffer, filename?: string) => {
   console.log("\n🔄 Starting PDF processing...");
   console.log("   Buffer size:", buffer.length, "bytes");
 
@@ -76,6 +104,10 @@ export const processPdfBuffer = async (buffer: Buffer) => {
     console.log("\n💾 Saving vector store to disk...");
     await vectorStore.save(INDEX_PATH);
     console.log("✅ Vector store saved successfully");
+
+    if (filename) {
+      savePdfMetadata(filename);
+    }
 
     console.log("\n✨ PDF processing completed successfully!");
     return { chunks: docs.length };

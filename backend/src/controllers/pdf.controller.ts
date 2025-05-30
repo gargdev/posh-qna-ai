@@ -1,5 +1,5 @@
-import { Request, Response } from "express";
-import { processPdfBuffer } from "../services/pdf.service";
+import { Request, Response, RequestHandler } from "express";
+import { processPdfBuffer, getPdfMetadata } from "../services/pdf.service";
 
 console.log("📑 Initializing PDF Controller...");
 
@@ -31,7 +31,10 @@ export const uploadPdfHandler = async (req: Request, res: Response) => {
     console.log("   - MIME type:", req.file.mimetype);
 
     console.log("\n🔄 Processing PDF file...");
-    const result = await processPdfBuffer(req.file.buffer);
+    const result = await processPdfBuffer(
+      req.file.buffer,
+      req.file.originalname,
+    );
 
     console.log("\n✅ PDF Processing Complete");
     console.log("   - Chunks created:", result.chunks);
@@ -56,4 +59,9 @@ export const uploadPdfHandler = async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : "Failed to process PDF",
     });
   }
+};
+
+export const listPdfMetadataHandler: RequestHandler = (_req, res) => {
+  const metadata = getPdfMetadata();
+  res.json(metadata);
 };

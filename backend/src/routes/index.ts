@@ -1,6 +1,8 @@
-import express from "express";
+import express, { Request, Response, RequestHandler } from "express";
 import { queryHandler } from "../controllers/chat.controller";
 import pdfRoutes from "./pdf.routes";
+import dotenv from "dotenv";
+dotenv.config();
 
 console.log("📝 Initializing main router...");
 const router = express.Router();
@@ -18,6 +20,30 @@ router.post("/query", queryHandler);
 
 console.log("📂 Mounting PDF routes at /pdf");
 router.use("/pdf", pdfRoutes);
+
+console.log("🔗 Setting up /login route for admin authentication");
+const loginHandler: RequestHandler = (req, res) => {
+  const { email, password } = req.body;
+  if (
+    email === process.env.ADMIN_EMAIL &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    req.session.isAdmin = true;
+    res.json({ success: true });
+    return;
+  }
+  res.status(401).json({ error: "Invalid credentials" });
+};
+
+console.log("🔗 Setting up /logout route to destroy the session");
+const logoutHandler: RequestHandler = (req, res) => {
+  req.session.destroy(() => {
+    res.json({ success: true });
+  });
+};
+
+router.post("/login", loginHandler);
+router.post("/logout", logoutHandler);
 
 console.log("✅ Router setup complete");
 

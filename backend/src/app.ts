@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 console.log("⚙️ Loading environment variables...");
 dotenv.config();
+
 import express, { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import passport from "passport";

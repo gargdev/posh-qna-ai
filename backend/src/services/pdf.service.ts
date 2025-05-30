@@ -2,11 +2,13 @@ import pdfParse from "pdf-parse";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
+import fs from "fs";
 
 console.log("📚 Initializing PDF service...");
 
 const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
 const HF_TOKEN = process.env.HF_API_TOKEN;
+const INDEX_PATH = "./vector-db/faiss-index";
 
 console.log("⚙️ Configuration:");
 console.log("   - Embedding Model:", HF_EMBED_MODEL);
@@ -57,12 +59,22 @@ export const processPdfBuffer = async (buffer: Buffer) => {
     });
     console.log("✅ Embeddings model initialized");
 
-    console.log("\n💾 Creating vector store...");
-    const vectorStore = await FaissStore.fromDocuments(docs, embeddings);
-    console.log("✅ Vector store created");
+    let vectorStore;
+    if (fs.existsSync(INDEX_PATH)) {
+      console.log("\n📚 Loading existing vector store...");
+      vectorStore = await FaissStore.load(INDEX_PATH, embeddings);
+      console.log("✅ Existing vector store loaded");
+      console.log("\n➕ Adding new documents to vector store...");
+      await vectorStore.addDocuments(docs);
+      console.log("✅ New documents added");
+    } else {
+      console.log("\n💾 Creating new vector store...");
+      vectorStore = await FaissStore.fromDocuments(docs, embeddings);
+      console.log("✅ New vector store created");
+    }
 
     console.log("\n💾 Saving vector store to disk...");
-    await vectorStore.save("./vector-db/faiss-index");
+    await vectorStore.save(INDEX_PATH);
     console.log("✅ Vector store saved successfully");
 
     console.log("\n✨ PDF processing completed successfully!");

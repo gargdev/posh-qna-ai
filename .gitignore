@@ -54,9 +54,9 @@ out/
 **/*.tsbuildinfo
 .eslintcache
 
-# Vector store files (if you want to version control these separately)
-**/vector-db/
-**/faiss-index/
+# # Vector store files (if you want to version control these separately)
+# **/vector-db/
+# **/faiss-index/
 
 # OS specific files
 .DS_Store

@@ -1,27 +1,30 @@
 import pdfParse from "pdf-parse";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
-import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
+import { OpenAIEmbeddings } from "@langchain/openai";
 import fs from "fs";
 
 console.log("📚 Initializing PDF service...");
 
-const HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1";
-const HF_TOKEN = process.env.HF_API_TOKEN;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const EMBEDDING_MODEL = "text-embedding-3-small";
 const INDEX_PATH = "./vector-db/faiss-index";
 const METADATA_PATH = "./vector-db/pdf-metadata.json";
 
 console.log("⚙️ Configuration:");
-console.log("   - Embedding Model:", HF_EMBED_MODEL);
-console.log("   - HF Token Status:", HF_TOKEN ? "✅ Set" : "❌ Not set");
+console.log("   - Embedding Model:", EMBEDDING_MODEL);
+console.log(
+  "   - OpenAI API Key Status:",
+  OPENAI_API_KEY ? "✅ Set" : "❌ Not set",
+);
 
-if (!process.env.HF_API_TOKEN) {
-  console.error("❌ ERROR: HF_API_TOKEN is not defined!");
-  throw new Error("HF_API_TOKEN is not defined!");
+if (!process.env.OPENAI_API_KEY) {
+  console.error("❌ ERROR: OPENAI_API_KEY is not defined!");
+  throw new Error("OPENAI_API_KEY is not defined!");
 }
 
 // BEFORE embedding, add a debug log:
-console.log("⚙️ Calling HF embedding for model:", HF_EMBED_MODEL);
+console.log("⚙️ Using OpenAI embedding model:", EMBEDDING_MODEL);
 
 function savePdfMetadata(filename: string) {
   let metadata: any[] = [];
@@ -81,9 +84,9 @@ export const processPdfBuffer = async (buffer: Buffer, filename?: string) => {
     );
 
     console.log("\n🧠 Initializing embeddings model...");
-    const embeddings = new HuggingFaceInferenceEmbeddings({
-      apiKey: HF_TOKEN,
-      model: HF_EMBED_MODEL,
+    const embeddings = new OpenAIEmbeddings({
+      openAIApiKey: OPENAI_API_KEY,
+      modelName: EMBEDDING_MODEL,
     });
     console.log("✅ Embeddings model initialized");
 

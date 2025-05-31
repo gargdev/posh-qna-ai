@@ -57,6 +57,7 @@ out/
 # Vector store files (if you want to version control these separately)
 **/vector-db/
 **/faiss-index/
+backend/vector-db/
 
 # OS specific files
 .DS_Store

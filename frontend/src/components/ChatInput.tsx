@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useChat } from "../contexts/ChatContext";
-import type { Message } from "../contexts/ChatContext";
 import { sendQuery } from "../services/api";
 
 export default function ChatInput() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { addMessage } = useChat();
+  const { addMessage, removeThinkingMessage } = useChat();
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -14,26 +13,27 @@ export default function ChatInput() {
 
     try {
       setIsLoading(true);
-      const userMessage: Message = { role: "user", content: trimmed };
-      addMessage(userMessage);
+      addMessage({ role: "user", content: trimmed });
       setInput("");
 
-      const thinkingMessage: Message = { role: "ai", content: "Thinking..." };
-      addMessage(thinkingMessage);
+      addMessage({ role: "ai", content: "Thinking..." });
 
       const response = await sendQuery(trimmed);
 
-      // Remove the thinking message and add the actual response
-      const aiMessage: Message = { role: "ai", content: response.answer };
-      addMessage(aiMessage);
+      // Remove the thinking message
+      removeThinkingMessage();
+
+      // Add the actual response
+      addMessage({ role: "ai", content: response.answer });
     } catch (error) {
       console.error("Error sending query:", error);
-      const errorMessage: Message = {
+      // Remove the thinking message
+      removeThinkingMessage();
+      addMessage({
         role: "ai",
         content:
           "I apologize, but I encountered an error while processing your question. Please try again.",
-      };
-      addMessage(errorMessage);
+      });
     } finally {
       setIsLoading(false);
     }

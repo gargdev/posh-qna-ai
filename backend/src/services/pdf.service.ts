@@ -4,6 +4,21 @@ import { FaissStore } from "@langchain/community/vectorstores/faiss";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import fs from "fs";
 
+// Add metadata types
+interface DocumentMetadata {
+  source: string;
+  type: string;
+  uploadedAt: string;
+  chunk_index?: number;
+  total_chunks?: number;
+  section_type?:
+    | "definition"
+    | "procedure"
+    | "rights"
+    | "obligations"
+    | "consequences";
+}
+
 console.log("📚 Initializing PDF service...");
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -69,13 +84,47 @@ export const processPdfBuffer = async (buffer: Buffer, filename?: string) => {
 
     console.log("\n📋 Splitting text into chunks...");
     const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 500,
-      chunkOverlap: 50,
+      chunkSize: 1000,
+      chunkOverlap: 200,
+      separators: ["\n\n", "\n", ".", "!", "?", ";", ":", " ", ""],
     });
-    console.log("   - Chunk size:", 500);
-    console.log("   - Chunk overlap:", 50);
+    console.log("   - Chunk size:", 1000);
+    console.log("   - Chunk overlap:", 200);
 
-    const docs = await splitter.createDocuments([text]);
+    const docs = await splitter.createDocuments(
+      [text],
+      [
+        {
+          metadata: {
+            source: filename || "unknown",
+            type: "POSH_document",
+            uploadedAt: new Date().toISOString(),
+          } as DocumentMetadata,
+        },
+      ],
+    );
+
+    docs.forEach((doc, index) => {
+      doc.metadata.chunk_index = index;
+      doc.metadata.total_chunks = docs.length;
+
+      const content = doc.pageContent.toLowerCase();
+      if (content.includes("definition") || content.includes("what is")) {
+        doc.metadata.section_type = "definition";
+      } else if (content.includes("procedure") || content.includes("process")) {
+        doc.metadata.section_type = "procedure";
+      } else if (content.includes("rights") || content.includes("protection")) {
+        doc.metadata.section_type = "rights";
+      } else if (content.includes("obligation") || content.includes("duty")) {
+        doc.metadata.section_type = "obligations";
+      } else if (
+        content.includes("penalty") ||
+        content.includes("punishment")
+      ) {
+        doc.metadata.section_type = "consequences";
+      }
+    });
+
     console.log("✅ Text split successfully");
     console.log("   - Number of chunks:", docs.length);
     console.log(

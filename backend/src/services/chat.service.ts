@@ -1,6 +1,6 @@
-import fetch from "node-fetch";
+import { fetch } from "undici";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
 
 console.log("🤖 Initializing Chat Service...");
 
@@ -8,25 +8,39 @@ interface HFResponse {
   generated_text: string;
 }
 
-const HF_CHAT_MODEL = "meta-llama/Llama-2-7b-chat-hf";
+// Using Mixtral for reliable inference API access
+const HF_CHAT_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
+const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
 const HF_TOKEN = process.env.HF_API_TOKEN;
 const INDEX_PATH = "./vector-db/faiss-index";
 
 console.log("⚙️ Chat Service Configuration:");
 console.log("   - Chat Model:", HF_CHAT_MODEL);
+console.log("   - Embedding Model:", HF_EMBED_MODEL);
 console.log("   - Vector Store Path:", INDEX_PATH);
 console.log("   - HF Token Status:", HF_TOKEN ? "✅ Set" : "❌ Not set");
+
+if (!HF_TOKEN) {
+  console.error("❌ ERROR: HF_API_TOKEN is not defined!");
+  throw new Error(
+    "HF_API_TOKEN is not defined! Please set the HF_API_TOKEN environment variable with your Hugging Face access token.",
+  );
+}
 
 export const answerQuery = async (userQuery: string) => {
   console.log("\n🔍 Processing user query...");
   console.log("   Query:", userQuery);
 
   try {
+    console.log("\n🧠 Initializing embeddings model...");
+    const embeddings = new HuggingFaceInferenceEmbeddings({
+      apiKey: HF_TOKEN,
+      model: HF_EMBED_MODEL,
+    });
+    console.log("✅ Embeddings model initialized");
+
     console.log("\n📚 Loading vector store...");
-    const store = await FaissStore.load(
-      INDEX_PATH,
-      {} as any, // embeddings interface isn't needed for similaritySearch
-    );
+    const store = await FaissStore.load(INDEX_PATH, embeddings);
     console.log("✅ Vector store loaded successfully");
 
     console.log("\n🔎 Performing similarity search...");
@@ -39,18 +53,24 @@ export const answerQuery = async (userQuery: string) => {
       .join("\n\n");
 
     console.log("\n📝 Preparing chat completion payload...");
+    const prompt = `<s>[INST] You are a POSH (Prevention of Sexual Harassment) Act expert. Use the following context to answer the question. Keep your answer concise and in bullet points. Only use information from the provided context.
+
+Context:
+${context}
+
+Question: ${userQuery} [/INST]</s>`;
+
     const payload = {
-      inputs: [
-        {
-          role: "system",
-          content:
-            "You are a POSH Act expert. Answer in concise bullet points using only the context.",
-        },
-        { role: "user", content: `${context}\n\nQuestion: ${userQuery}` },
-      ],
+      inputs: prompt,
+      parameters: {
+        max_new_tokens: 512, // Reduced for more concise answers
+        temperature: 0.3, // Reduced for more focused answers
+        top_p: 0.95,
+        do_sample: true,
+        return_full_text: false,
+      },
     };
-    console.log("   System prompt length:", payload.inputs[0].content.length);
-    console.log("   Context length:", context.length);
+    console.log("   Prompt length:", prompt.length);
 
     console.log("\n🤖 Calling chat model API...");
     const res = await fetch(
@@ -70,6 +90,11 @@ export const answerQuery = async (userQuery: string) => {
       console.error("\n❌ Chat API error:");
       console.error("   Status:", res.status);
       console.error("   Error:", err);
+      if (res.status === 401 || res.status === 403) {
+        throw new Error(
+          "Authentication failed. Please check your HF_API_TOKEN is correct.",
+        );
+      }
       throw new Error(`Chat failed ${res.status}: ${err}`);
     }
 

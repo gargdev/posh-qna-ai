@@ -1,3 +1,67 @@
+# Dependencies
 node_modules/
 dist/
+
+# Environment variables and secrets
 .env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.cert
+*.secret
+.credentials/
+
+# Test files
+**/test-*.js
+**/test-*.ts
+backend/test-token.js
+backend/test-inference.js
+backend/test-simple.js
+backend/test-llama.js
+backend/test-posh-qa.js
+backend/test-user.js
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+build/
+dist/
+out/
+
+# Cache and temporary files
+.cache/
+.npm/
+.yarn/
+.tmp/
+*.tmp
+*.temp
+*.bak
+*.backup
+.tsbuildinfo
+**/*.tsbuildinfo
+.eslintcache
+
+# Vector store files (if you want to version control these separately)
+**/vector-db/
+**/faiss-index/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Trunk
+.trunk/

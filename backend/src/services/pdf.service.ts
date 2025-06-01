@@ -6,7 +6,7 @@ import fs from "fs";
 
 console.log("📚 Initializing PDF service...");
 
-const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
+const HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1";
 const HF_TOKEN = process.env.HF_API_TOKEN;
 const INDEX_PATH = "./vector-db/faiss-index";
 const METADATA_PATH = "./vector-db/pdf-metadata.json";

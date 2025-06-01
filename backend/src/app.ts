@@ -18,7 +18,7 @@ import crypto from "crypto";
 import routes from "./routes/index";
 
 console.log("🚀 Initializing Express application...");
-const app = express();
+export const app = express();
 
 // Security Configurations
 const allowedOrigins = [
@@ -201,3 +201,5 @@ app.listen(PORT, () => {
   console.log(`   - Health check: http://localhost:${PORT}/api/health`);
   console.log(`   - API base URL: http://localhost:${PORT}/api`);
 });
+
+export default app;

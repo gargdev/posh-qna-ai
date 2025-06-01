@@ -1,7 +1,7 @@
 import { fetch } from "undici";
 import { FaissStore } from "@langchain/community/vectorstores/faiss";
 import { HuggingFaceInferenceEmbeddings } from "@langchain/community/embeddings/hf";
-
+import redis from "../utils/redis";
 console.log("🤖 Initializing Chat Service...");
 
 interface HFResponse {
@@ -10,7 +10,7 @@ interface HFResponse {
 
 // Using Mixtral for reliable inference API access
 const HF_CHAT_MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
-const HF_EMBED_MODEL = "BAAI/bge-small-en-v1.5";
+const HF_EMBED_MODEL = "mixedbread-ai/mxbai-embed-large-v1";
 const HF_TOKEN = process.env.HF_API_TOKEN;
 const INDEX_PATH = "./vector-db/faiss-index";
 
@@ -31,7 +31,18 @@ export const answerQuery = async (userQuery: string) => {
   console.log("\n🔍 Processing user query...");
   console.log("   Query:", userQuery);
 
+  // Redis key can be a hash of the query to avoid overly long keys
+  const cacheKey = `answer:${userQuery}`;
+
   try {
+    // 1. Try Redis cache first
+    const cachedAnswer = await redis.get(cacheKey);
+    if (cachedAnswer) {
+      console.log("⚡ Returning cached answer");
+      return cachedAnswer;
+    };
+
+    // 2. Initialize Embeddings
     console.log("\n🧠 Initializing embeddings model...");
     const embeddings = new HuggingFaceInferenceEmbeddings({
       apiKey: HF_TOKEN,
@@ -39,10 +50,12 @@ export const answerQuery = async (userQuery: string) => {
     });
     console.log("✅ Embeddings model initialized");
 
+    // 3. Load Vector Store
     console.log("\n📚 Loading vector store...");
     const store = await FaissStore.load(INDEX_PATH, embeddings);
     console.log("✅ Vector store loaded successfully");
 
+     // 4. Similarity Search
     console.log("\n🔎 Performing similarity search...");
     const docs = await store.similaritySearch(userQuery, 3);
     console.log("✅ Found similar documents:");
@@ -51,7 +64,8 @@ export const answerQuery = async (userQuery: string) => {
     const context = docs
       .map((d, i) => `Context ${i + 1}:\n${d.pageContent}`)
       .join("\n\n");
-
+    
+    // 5. Construct Prompt
     console.log("\n📝 Preparing chat completion payload...");
     const prompt = `<s>[INST] You are a POSH (Prevention of Sexual Harassment) Act expert. Use the following context to answer the question. Keep your answer concise and in bullet points. Only use information from the provided context.
 
@@ -72,6 +86,7 @@ Question: ${userQuery} [/INST]</s>`;
     };
     console.log("   Prompt length:", prompt.length);
 
+    // 6. Call HF API
     console.log("\n🤖 Calling chat model API...");
     const res = await fetch(
       `https://api-inference.huggingface.co/models/${HF_CHAT_MODEL}`,
@@ -99,6 +114,7 @@ Question: ${userQuery} [/INST]</s>`;
     }
 
     console.log("✅ Received response from chat model");
+
     const json = (await res.json()) as HFResponse | HFResponse[];
     const response = Array.isArray(json)
       ? json[0].generated_text
@@ -107,6 +123,10 @@ Question: ${userQuery} [/INST]</s>`;
     console.log("\n📤 Processing response...");
     console.log("   Response length:", response.length, "characters");
     console.log("   Preview:", response.slice(0, 100));
+
+    // 7. Cache the answer in Redis
+    await redis.set(cacheKey, response, "EX", 3600); // 1 hour cache
+    console.log("💾 Answer cached in Redis");
 
     return response;
   } catch (error) {

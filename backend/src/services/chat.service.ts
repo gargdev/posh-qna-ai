@@ -123,6 +123,7 @@ export const answerQuery = async (userQuery: string) => {
   console.log("   Query:", userQuery);
 
   try {
+        const previousContext = analyzeFeedbackForSimilarQueries(userQuery);
 
     const cacheKey = `query:${userQuery.trim().toLowerCase()}`;
     
@@ -148,6 +149,10 @@ export const answerQuery = async (userQuery: string) => {
       .map((d, i) => `Context ${i + 1}:\n${d.pageContent}`)
       .join("\n\n");
 
+       if (previousContext) {
+      context = `${context}\n\nPrevious successful context:\n${previousContext}`;
+    }
+    
     console.log("\n📝 Preparing chat completion payload...");
     const prompt = `<s>[INST] You are a POSH (Prevention of Sexual Harassment) Act expert. Use the following context to answer the question. Keep your answer concise and in bullet points. Only use information from the provided context.
 

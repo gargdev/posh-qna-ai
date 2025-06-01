@@ -118,14 +118,24 @@ const analyzeFeedbackForSimilarQueries = (query: string): string | null => {
   return null;
 };
 
+
+
+
 export const answerQuery = async (userQuery: string) => {
   console.log("\n🔍 Processing user query...");
   console.log("   Query:", userQuery);
 
   try {
-        const previousContext = analyzeFeedbackForSimilarQueries(userQuery);
+      const previousContext = analyzeFeedbackForSimilarQueries(userQuery);
 
     const cacheKey = `query:${userQuery.trim().toLowerCase()}`;
+       // At the top of answerQuery
+    const cachedAnswer = await redis.get(cacheKey);
+    if (cachedAnswer) {
+      console.log("✅ Redis cache hit");
+    return cachedAnswer;
+  }
+    console.log("❌ Redis cache miss, generating new answer");
     
     console.log("\n🧠 Initializing embeddings model...");
     const embeddings = new HuggingFaceInferenceEmbeddings({
@@ -210,6 +220,8 @@ Question: ${userQuery} [/INST]</s>`;
     console.log("\n📤 Processing response...");
     console.log("   Response length:", response.length, "characters");
     console.log("   Preview:", response.slice(0, 100));
+
+ 
 
     // 7. Cache the answer in Redis
     await redis.set(cacheKey, response, "EX", 3600); // 1 hour cache

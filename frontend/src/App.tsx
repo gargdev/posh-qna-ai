@@ -1,6 +1,7 @@
 import { ChatProvider } from "./contexts/ChatContext";
 import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
+import ChatSidebar from "./components/ChatSidebar";
 import { Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 
@@ -207,13 +208,16 @@ function App() {
         path="/"
         element={
           <ChatProvider>
-            <div className="min-h-screen flex flex-col justify-between items-center bg-gray-100 p-4">
-              <h1 className="text-2xl font-bold text-center mb-4">
-                POSH Q&A Assistant
-              </h1>
-              <div className="w-full max-w-3xl flex flex-col gap-4">
-                <ChatWindow />
-                <ChatInput />
+            <div className="min-h-screen flex bg-gray-100">
+              <ChatSidebar />
+              <div className="flex-1 flex flex-col p-4">
+                <h1 className="text-2xl font-bold text-center mb-4">
+                  POSH Q&A Assistant
+                </h1>
+                <div className="flex-1 flex flex-col justify-between max-w-3xl mx-auto w-full">
+                  <ChatWindow />
+                  <ChatInput />
+                </div>
               </div>
             </div>
           </ChatProvider>

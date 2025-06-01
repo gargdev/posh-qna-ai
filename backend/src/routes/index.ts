@@ -1,5 +1,5 @@
 import express, { Request, Response, RequestHandler } from "express";
-import { queryHandler } from "../controllers/chat.controller";
+import { queryHandler, feedbackHandler } from "../controllers/chat.controller";
 import pdfRoutes from "./pdf.routes";
 import dotenv from "dotenv";
 dotenv.config();
@@ -17,6 +17,9 @@ router.use((req, _res, next) => {
 
 console.log("🔗 Setting up /query route for chat endpoints");
 router.post("/query", queryHandler);
+
+console.log("🔗 Setting up /feedback route for response feedback");
+router.post("/feedback", feedbackHandler);
 
 console.log("📂 Mounting PDF routes at /pdf");
 router.use("/pdf", pdfRoutes);

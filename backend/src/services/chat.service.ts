@@ -123,6 +123,9 @@ export const answerQuery = async (userQuery: string) => {
   console.log("   Query:", userQuery);
 
   try {
+
+    const cacheKey = `query:${userQuery.trim().toLowerCase()}`;
+    
     console.log("\n🧠 Initializing embeddings model...");
     const embeddings = new HuggingFaceInferenceEmbeddings({
       apiKey: HF_TOKEN,

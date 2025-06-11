@@ -66,16 +66,16 @@ app.use(
         scriptSrc: ["'self'", "'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
+        connectSrc: ["'self'", ...allowedOrigins],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
       },
     },
-    crossOriginEmbedderPolicy: true,
-    crossOriginOpenerPolicy: true,
-    crossOriginResourcePolicy: { policy: "same-site" },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     dnsPrefetchControl: { allow: false },
     frameguard: { action: "deny" },
     hidePoweredBy: true,
@@ -147,6 +147,8 @@ const requestLoggingMiddleware: RequestHandler = (req, res, next) => {
 
 // API Routes
 console.log("🛣️ Mounting API routes...");
+app.use(cacheControlMiddleware);
+app.use(requestLoggingMiddleware);
 app.use("/api", routes);
 console.log("✅ API routes mounted");
 
@@ -179,10 +181,17 @@ const errorHandler: ErrorRequestHandler = (
   });
 };
 
-app.use(cacheControlMiddleware);
-app.use(requestLoggingMiddleware);
+// Mount final routes and middleware
 app.get("/api/health", healthCheckHandler);
 app.use(errorHandler);
+
+// 404 Handler
+app.use((req, res) => {
+  console.log(`❌ 404 - Not Found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({
+    error: `Cannot ${req.method} ${req.originalUrl}`,
+  });
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

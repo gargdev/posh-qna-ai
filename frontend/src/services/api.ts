@@ -1,4 +1,4 @@
-import axios from "axios";
+  import axios from "axios";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:4000/api";
@@ -35,6 +35,7 @@ axios.interceptors.response.use(
 
 export const sendQuery = async (query: string) => {
   try {
+    console.log('📩 Sending query to:', `${API_BASE_URL}/query`);
     const response = await axios.post(`${API_BASE_URL}/query`, { query });
     return response.data;
   } catch (error) {
@@ -55,6 +56,7 @@ export const sendFeedback = async (
   }
 
   try {
+    console.log('📩 Sending query to:', `${API_BASE_URL}/query`);
     const feedback = await axios.post(`${API_BASE_URL}/feedback`, {
       query,
       response,

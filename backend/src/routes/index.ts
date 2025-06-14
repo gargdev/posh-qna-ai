@@ -1,6 +1,10 @@
 import express, { Request, Response, RequestHandler } from "express";
 import { queryHandler, feedbackHandler } from "../controllers/chat.controller";
 import pdfRoutes from "./pdf.routes";
+import authRoutes from "./auth.routes";
+import organizationRoutes from "./organization.routes";
+import subscriptionRoutes from "./subscription.routes"; 
+import { restrictChatToOrgDomains } from '../middleware/auth.middleware';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -17,13 +21,23 @@ router.use((req, _res, next) => {
 
 // API Routes
 console.log("🔗 Setting up /query route for chat queries");
-router.post("/query", queryHandler);
+router.post("/query", restrictChatToOrgDomains, queryHandler);
 
 console.log("🔗 Setting up /feedback route for response feedback");
-router.post("/feedback", feedbackHandler);
+router.post("/feedback", restrictChatToOrgDomains, feedbackHandler);
 
 console.log("📂 Mounting PDF routes at /pdf");
 router.use("/pdf", pdfRoutes);
+
+console.log("📂 Mounting Auth routes at /auth");
+router.use("/auth", authRoutes);
+
+console.log('📂 Mounting Organization routes at /organization');
+router.use('/organization', organizationRoutes);
+
+console.log('📂 Mounting Subscription routes at /subscription'); // New log
+router.use('/subscription', subscriptionRoutes); 
+
 
 // Authentication Routes
 console.log("🔗 Setting up /login route for admin authentication");

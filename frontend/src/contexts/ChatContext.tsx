@@ -75,11 +75,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
+    console.log('📝 Starting new conversation:', newId); // Debug log
     setConversations((prev) => [...prev, newConversation]);
     setCurrentConversationId(newId);
   };
 
   const switchConversation = (id: string) => {
+    console.log('🔄 Switching to conversation:', id); // Debug log
     setCurrentConversationId(id);
   };
 
@@ -89,11 +91,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
     };
+    console.log('📩 Adding message:', newMessage); // Debug log
 
     setConversations((prev) => {
       if (!currentConversationId) {
         // Start a new conversation if none exists
         const newId = Date.now().toString();
+        console.log('📝 Creating new conversation for message:', newId); // Debug log
         setCurrentConversationId(newId);
         return [
           {
@@ -130,6 +134,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     messageId: string,
     feedback: "helpful" | "not_helpful",
   ) => {
+    console.log('📤 Updating feedback for message:', messageId, feedback); // Debug log
     setConversations((prev) =>
       prev.map((conv) => ({
         ...conv,
@@ -142,6 +147,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const clearMessages = () => {
     if (currentConversationId) {
+      console.log('🗑️ Clearing messages for conversation:', currentConversationId); // Debug log
       setConversations((prev) =>
         prev.filter((conv) => conv.id !== currentConversationId),
       );
@@ -154,9 +160,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     if (conversations.length === 0) {
       startNewConversation();
     }
-  }, []);
+  }, [conversations.length]);
 
   const deleteConversation = (id: string) => {
+    console.log('🗑️ Deleting conversation:', id); // Debug log
     setConversations((prev) => prev.filter((conv) => conv.id !== id));
     if (currentConversationId === id) {
       // If we're deleting the current conversation, switch to another one or create new
@@ -170,6 +177,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeThinkingMessage = () => {
+    console.log('🧠 Removing "Thinking..." message'); // Debug log
     setConversations((prev) =>
       prev.map((conv) => {
         if (conv.id === currentConversationId) {

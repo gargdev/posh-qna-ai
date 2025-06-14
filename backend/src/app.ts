@@ -16,6 +16,9 @@ import cors from "cors";
 import morgan from "morgan";
 import crypto from "crypto";
 import routes from "./routes/index";
+import organizationRoutes from "./routes/organization.routes";
+import { connectDB } from "./utils/db";
+import './utils/passport'
 
 console.log("🚀 Initializing Express application...");
 const app = express();
@@ -36,9 +39,11 @@ app.use(
       origin: string | undefined,
       callback: (error: Error | null, success?: boolean) => void,
     ) => {
+      console.log(`🔍 CORS check for origin: ${origin}`);
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.error(`❌ CORS blocked for origin: ${origin}`);
         callback(new Error("Not allowed by CORS"));
       }
     },
@@ -111,11 +116,16 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "strict",
+      sameSite: "lax",     //Ensure this is lax for redirects
+      path: '/', // Ensure cookie is available site-wide
     },
   }),
 );
 console.log("✅ Session middleware configured");
+
+// Connect to MongoDB (add this after middleware setup, before routes)
+console.log("📚 Connecting to MongoDB...");
+connectDB();
 
 // Initialize Passport
 console.log("🔑 Setting up Passport authentication...");

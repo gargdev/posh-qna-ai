@@ -19,6 +19,7 @@ import routes from "./routes/index";
 import organizationRoutes from "./routes/organization.routes";
 import { connectDB } from "./utils/db";
 import './utils/passport'
+import fileUpload from 'express-fileupload'; // New import
 
 console.log("🚀 Initializing Express application...");
 const app = express();
@@ -103,6 +104,11 @@ console.log("📦 Setting up enhanced JSON parser middleware...");
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 console.log("✅ Enhanced JSON parser configured");
+
+// File Upload Middleware
+console.log("📂 Setting up file upload middleware...");
+app.use(fileUpload({ limits: { fileSize: 5 * 1024 * 1024 } })); // 5MB limit
+console.log("✅ File upload middleware configured");
 
 // Session Configuration
 console.log("🔐 Setting up session middleware...");

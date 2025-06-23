@@ -4,6 +4,7 @@ import pdfRoutes from "./pdf.routes";
 import authRoutes from "./auth.routes";
 import organizationRoutes from "./organization.routes";
 import subscriptionRoutes from "./subscription.routes"; 
+import adminRoutes from "./admin.routes";
 import { restrictChatToOrgDomains } from '../middleware/auth.middleware';
 import dotenv from "dotenv";
 dotenv.config();
@@ -39,30 +40,33 @@ console.log('📂 Mounting Subscription routes at /subscription'); // New log
 router.use('/subscription', subscriptionRoutes); 
 
 
-// Authentication Routes
-console.log("🔗 Setting up /login route for admin authentication");
-const loginHandler: RequestHandler = (req, res) => {
-  const { email, password } = req.body;
-  if (
-    email === process.env.ADMIN_EMAIL &&
-    password === process.env.ADMIN_PASSWORD
-  ) {
-    req.session.isAdmin = true;
-    res.json({ success: true });
-    return;
-  }
-  res.status(401).json({ error: "Invalid credentials" });
-};
+// // Authentication Routes
+// console.log("🔗 Setting up /login route for admin authentication");
+// const loginHandler: RequestHandler = (req, res) => {
+//   const { email, password } = req.body;
+//   if (
+//     email === process.env.ADMIN_EMAIL &&
+//     password === process.env.ADMIN_PASSWORD
+//   ) {
+//     req.session.isAdmin = true;
+//     res.json({ success: true });
+//     return;
+//   }
+//   res.status(401).json({ error: "Invalid credentials" });
+// };
 
-console.log("🔗 Setting up /logout route to destroy the session");
-const logoutHandler: RequestHandler = (req, res) => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
-};
+// console.log("🔗 Setting up /logout route to destroy the session");
+// const logoutHandler: RequestHandler = (req, res) => {
+//   req.session.destroy(() => {
+//     res.json({ success: true });
+//   });
+// };
 
-router.post("/login", loginHandler);
-router.post("/logout", logoutHandler);
+// router.post("/login", loginHandler);
+// router.post("/logout", logoutHandler);
+
+console.log("📂 Mounting Admin routes at /admin");
+router.use("/admin", adminRoutes);
 
 console.log("✅ Router setup complete");
 

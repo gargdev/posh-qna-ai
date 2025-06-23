@@ -16,7 +16,6 @@ import cors from "cors";
 import morgan from "morgan";
 import crypto from "crypto";
 import routes from "./routes/index";
-import organizationRoutes from "./routes/organization.routes";
 import { connectDB } from "./utils/db";
 import './utils/passport'
 
@@ -54,6 +53,7 @@ app.use(
       "Authorization",
       "X-Requested-With",
       "X-API-Key",
+      "X-CSRF-Token",
     ],
     exposedHeaders: ["Authorization"],
     credentials: true,
@@ -117,7 +117,8 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: "lax",     //Ensure this is lax for redirects
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'lax',
+      // sameSite: 'lax',
       path: '/', // Ensure cookie is available site-wide
     },
   }),

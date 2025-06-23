@@ -1,14 +1,17 @@
-import React, { useState, type FormEvent } from 'react';
-import { Building2, Globe, Mail, Plus, X } from 'lucide-react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { useNotification } from '../../contexts/NotificationContext';
-import LoadingSpinner from '../ui/LoadingSpinner';
+import React, { useState, type FormEvent } from "react";
+import { Building2, Globe, Mail, Plus, X } from "lucide-react";
+import { useAdmin } from "../../contexts/AdminContext";
+import { useNotification } from "../../contexts/NotificationContext";
+import LoadingSpinner from "../ui/LoadingSpinner";
+import AdminOrganizations from "./AdminOrganizations";
 
-const AdminCreateOrganization: React.FC = () => {
-  const [name, setName] = useState('');
-  const [domainInput, setDomainInput] = useState('');
+const AdminCreateOrganization: React.FC<{
+  onOrgAdded?: (name: string) => void;
+}> = ({ onOrgAdded }) => {
+  const [name, setName] = useState("");
+  const [domainInput, setDomainInput] = useState("");
   const [domains, setDomains] = useState<string[]>([]);
-  const [organizerInput, setOrganizerInput] = useState('');
+  const [organizerInput, setOrganizerInput] = useState("");
   const [organizers, setOrganizers] = useState<string[]>([]);
 
   const { state, actions } = useAdmin();
@@ -19,9 +22,9 @@ const AdminCreateOrganization: React.FC = () => {
       const domain = domainInput.trim().toLowerCase();
       if (!domains.includes(domain)) {
         setDomains([...domains, domain]);
-        setDomainInput('');
+        setDomainInput("");
       } else {
-        showError('Duplicate Domain', 'This domain has already been added');
+        showError("Duplicate Domain", "This domain has already been added");
       }
     }
   };
@@ -35,9 +38,12 @@ const AdminCreateOrganization: React.FC = () => {
       const organizer = organizerInput.trim().toLowerCase();
       if (!organizers.includes(organizer)) {
         setOrganizers([...organizers, organizer]);
-        setOrganizerInput('');
+        setOrganizerInput("");
       } else {
-        showError('Duplicate Organizer', 'This organizer has already been added');
+        showError(
+          "Duplicate Organizer",
+          "This organizer has already been added",
+        );
       }
     }
   };
@@ -50,25 +56,29 @@ const AdminCreateOrganization: React.FC = () => {
     e.preventDefault();
 
     if (!name.trim()) {
-      showError('Validation Error', 'Organization name is required');
+      showError("Validation Error", "Organization name is required");
       return;
     }
 
     if (domains.length === 0) {
-      showError('Validation Error', 'At least one domain is required');
+      showError("Validation Error", "At least one domain is required");
       return;
     }
 
     try {
-      await actions.createOrganization({ name: name.trim(), domains, organizers });
-      showSuccess('Success', 'Organization created successfully!');
-      
+      await actions.createOrganization({
+        name: name.trim(),
+        domains,
+        organizers,
+      });
+      showSuccess("Success", "Organization created successfully!");
+      if (onOrgAdded) onOrgAdded(name.trim());
       // Reset form
-      setName('');
+      setName("");
       setDomains([]);
       setOrganizers([]);
-      setDomainInput('');
-      setOrganizerInput('');
+      setDomainInput("");
+      setOrganizerInput("");
     } catch (error) {
       // Error is already handled in context
     }
@@ -82,8 +92,12 @@ const AdminCreateOrganization: React.FC = () => {
           <Building2 className="w-5 h-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Create Organization</h2>
-          <p className="text-sm text-gray-600">Set up a new organization with domains and organizers</p>
+          <h2 className="text-xl font-bold text-gray-900">
+            Create Organization
+          </h2>
+          <p className="text-sm text-gray-600">
+            Set up a new organization with domains and organizers
+          </p>
         </div>
       </div>
 
@@ -120,7 +134,9 @@ const AdminCreateOrganization: React.FC = () => {
                 onChange={(e) => setDomainInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 placeholder="e.g., zomato.com"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDomain())}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), handleAddDomain())
+                }
                 disabled={state.loading.organizations}
               />
             </div>
@@ -139,7 +155,9 @@ const AdminCreateOrganization: React.FC = () => {
         {/* Domain Tags */}
         {domains.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-700">Added Domains:</h3>
+            <h3 className="text-sm font-semibold text-gray-700">
+              Added Domains:
+            </h3>
             <div className="flex flex-wrap gap-2">
               {domains.map((domain) => (
                 <div
@@ -178,7 +196,10 @@ const AdminCreateOrganization: React.FC = () => {
                 onChange={(e) => setOrganizerInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 placeholder="e.g., organizer@zomato.com"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddOrganizer())}
+                onKeyPress={(e) =>
+                  e.key === "Enter" &&
+                  (e.preventDefault(), handleAddOrganizer())
+                }
                 disabled={state.loading.organizations}
               />
             </div>
@@ -197,7 +218,9 @@ const AdminCreateOrganization: React.FC = () => {
         {/* Organizer Tags */}
         {organizers.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-700">Added Organizers:</h3>
+            <h3 className="text-sm font-semibold text-gray-700">
+              Added Organizers:
+            </h3>
             <div className="flex flex-wrap gap-2">
               {organizers.map((organizer) => (
                 <div
@@ -232,7 +255,7 @@ const AdminCreateOrganization: React.FC = () => {
               Creating Organization...
             </div>
           ) : (
-            'Create Organization'
+            "Create Organization"
           )}
         </button>
       </form>

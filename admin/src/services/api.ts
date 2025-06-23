@@ -1,8 +1,15 @@
-import axios, { AxiosResponse, AxiosError } from 'axios';
-import { ApiResponse, Organization, Subscription, PdfDocument } from '../types/admin';
+import axios, { AxiosResponse, AxiosError } from "axios";
+import {
+  ApiResponse,
+  Organization,
+  Subscription,
+  PdfDocument,
+} from "../types/admin";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+// Add at top, alongside your other imports:
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -10,20 +17,34 @@ const apiClient = axios.create({
   withCredentials: true,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
+let _csrfToken: string | null = null;
+
+export async function fetchCsrfToken() {
+  if (!_csrfToken) {
+    const resp = await apiClient.get<{ csrfToken: string }>("/admin/csrf");
+    _csrfToken = resp.data.csrfToken;
+  }
+  return _csrfToken;
+}
+
 // Request interceptor for logging and auth
 apiClient.interceptors.request.use(
-  (config) => {
-    console.log(`🔄 ${config.method?.toUpperCase()} ${config.url}`);
+  async (config) => {
+    // Make sure we have a token before any non-GET
+    if (["post", "put", "patch", "delete"].includes(config.method!)) {
+      const token = await fetchCsrfToken();
+      config.headers!["X-CSRF-Token"] = token;
+    }
     return config;
   },
   (error) => {
-    console.error('❌ Request error:', error);
+    console.error("❌ Request error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor for error handling
@@ -33,20 +54,22 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    console.error('❌ Response error:', error.response?.data || error.message);
-    
+    console.error("❌ Response error:", error.response?.data || error.message);
+
     // Handle common error scenarios
     if (error.response?.status === 401) {
       // Redirect to login or clear auth state
-      window.location.href = '/admin';
+      window.location.href = "/admin";
     }
-    
+
     return Promise.reject(error);
-  }
+  },
 );
 
 // Helper function to handle API responses
-const handleApiResponse = <T>(response: AxiosResponse<ApiResponse<T>>): T => {
+const handleApiResponse = <T>(
+  response: AxiosResponse<ApiResponse<T>>,
+): T | undefined => {
   if (response.data.error) {
     throw new Error(response.data.error);
   }
@@ -54,68 +77,113 @@ const handleApiResponse = <T>(response: AxiosResponse<ApiResponse<T>>): T => {
 };
 
 // Helper function to handle API errors
-const handleApiError = (error: any): never => {
+const handleApiError = (error: unknown): never => {
   if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.error || error.message || 'An unexpected error occurred';
+    const message =
+      error.response?.data?.error ||
+      error.message ||
+      "An unexpected error occurred";
     throw new Error(message);
   }
-  throw new Error('An unexpected error occurred');
+  throw new Error("An unexpected error occurred");
 };
 
 // Authentication API
-export const authApi = {
-  login: async (email: string, password: string): Promise<void> => {
-    try {
-      const response = await apiClient.post('/login', { email, password });
-      return handleApiResponse(response);
-    } catch (error) {
-      handleApiError(error);
-    }
+// export const authApi = {
+//   login: async (email: string, password: string): Promise<void> => {
+//     try {
+//       const response = await apiClient.post('/login', { email, password });
+//       return handleApiResponse(response);
+//     } catch (error) {
+//       handleApiError(error);
+//     }
+//   },
+
+//   logout: async (): Promise<void> => {
+//     try {
+//       const response = await apiClient.post('/logout');
+//       return handleApiResponse(response);
+//     } catch (error) {
+//       handleApiError(error);
+//     }
+//   },
+
+//   checkAuth: async (): Promise<boolean> => {
+//     try {
+//       const response = await apiClient.get('/auth/check');
+//       return handleApiResponse(response);
+//     } catch (error) {
+//       return false;
+//     }
+//   },
+// };
+
+// New adminAuthApi:
+export const adminAuthApi = {
+  login: async (email: string, password: string) => {
+    // 1) ensure CSRF token is loaded
+    await fetchCsrfToken();
+    // 2) send login request (interceptor now injects X-CSRF-Token)
+    await apiClient.post("/admin/login", { email, password });
+    // 3) after login, clear it so future fetchCsrfToken() returns new one
+    _csrfToken = null;
+    // 4) fetch a fresh token (login route issues a new token in res.locals)
+    const resp = await apiClient.get<{ csrfToken: string }>("/admin/csrf");
+    _csrfToken = resp.data.csrfToken;
   },
 
-  logout: async (): Promise<void> => {
-    try {
-      const response = await apiClient.post('/logout');
-      return handleApiResponse(response);
-    } catch (error) {
-      handleApiError(error);
-    }
+  logout: async () => {
+    // interceptor will append X-CSRF-Token
+    await apiClient.post("/admin/logout");
+    _csrfToken = null;
   },
 
   checkAuth: async (): Promise<boolean> => {
-    try {
-      const response = await apiClient.get('/auth/check');
-      return handleApiResponse(response);
-    } catch (error) {
-      return false;
-    }
+    const resp = await apiClient.get<{ authenticated: boolean }>(
+      "/admin/check",
+    );
+    return resp.data.authenticated;
   },
 };
 
 // Organization API
 export const organizationApi = {
-  create: async (organization: Omit<Organization, 'id' | 'createdAt'>): Promise<Organization> => {
+  create: async (
+    organization: Omit<Organization, "id" | "createdAt">,
+  ): Promise<Organization> => {
     try {
-      const response = await apiClient.post('/organization/create', organization);
+      const response = await apiClient.post(
+        "/organization/create",
+        organization,
+      );
       return handleApiResponse(response);
     } catch (error) {
       handleApiError(error);
     }
+    throw new Error("Failed to create organization");
   },
 
   list: async (): Promise<Organization[]> => {
     try {
-      const response = await apiClient.get('/organization/list');
-      return handleApiResponse(response);
+      const response = await apiClient.get("/organization/list");
+      const data = handleApiResponse<{ organizations: Organization[] }>(
+        response,
+      );
+      if (data && Array.isArray(data.organizations)) {
+        return data.organizations;
+      } else {
+        throw new Error("Invalid organizations response");
+      }
     } catch (error) {
       handleApiError(error);
     }
+    return [];
   },
 
   delete: async (id: string): Promise<void> => {
     try {
       const response = await apiClient.delete(`/organization/${id}`);
-      return handleApiResponse(response);
+      handleApiResponse(response);
     } catch (error) {
       handleApiError(error);
     }
@@ -126,7 +194,7 @@ export const organizationApi = {
 export const subscriptionApi = {
   add: async (email: string): Promise<Subscription> => {
     try {
-      const response = await apiClient.post('/subscription/add', { email });
+      const response = await apiClient.post("/subscription/add", { email });
       return handleApiResponse(response);
     } catch (error) {
       handleApiError(error);
@@ -135,7 +203,7 @@ export const subscriptionApi = {
 
   list: async (): Promise<Subscription[]> => {
     try {
-      const response = await apiClient.get('/subscription/list');
+      const response = await apiClient.get("/subscription/list");
       return handleApiResponse(response);
     } catch (error) {
       handleApiError(error);
@@ -153,23 +221,29 @@ export const subscriptionApi = {
 
   uploadCsv: async (
     file: File,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
   ): Promise<{ message: string; added: number; skipped: number }> => {
     try {
       const formData = new FormData();
-      formData.append('csvFile', file);
+      formData.append("csvFile", file);
 
-      const response = await apiClient.post('/subscription/upload-csv', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const response = await apiClient.post(
+        "/subscription/upload-csv",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total && onProgress) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total,
+              );
+              onProgress(progress);
+            }
+          },
         },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total && onProgress) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(progress);
-          }
-        },
-      });
+      );
 
       return handleApiResponse(response);
     } catch (error) {
@@ -182,19 +256,21 @@ export const subscriptionApi = {
 export const documentApi = {
   upload: async (
     file: File,
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
   ): Promise<{ message: string; chunks: number }> => {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
 
-      const response = await apiClient.post('/pdf/upload', formData, {
+      const response = await apiClient.post("/pdf/upload", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total && onProgress) {
-            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
             onProgress(progress);
           }
         },
@@ -208,7 +284,7 @@ export const documentApi = {
 
   list: async (): Promise<PdfDocument[]> => {
     try {
-      const response = await apiClient.get('/pdf/list');
+      const response = await apiClient.get("/pdf/list");
       return handleApiResponse(response);
     } catch (error) {
       handleApiError(error);
@@ -228,11 +304,11 @@ export const documentApi = {
 // Utility functions
 export const downloadSampleCsv = (): void => {
   const sampleCsv = `name,email\nJohn Doe,john.doe@gmail.com\nJane Smith,jane.smith@company.com\nAlice Johnson,alice@example.org`;
-  const blob = new Blob([sampleCsv], { type: 'text/csv' });
+  const blob = new Blob([sampleCsv], { type: "text/csv" });
   const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = 'sample-subscribers.csv';
+  a.download = "sample-subscribers.csv";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -240,9 +316,9 @@ export const downloadSampleCsv = (): void => {
 };
 
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return "0 Bytes";
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };

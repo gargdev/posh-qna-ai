@@ -17,7 +17,7 @@ const AdminSubscriptions: React.FC = () => {
   useEffect(() => {
     actions.fetchSubscriptions();
   }, []);
-
+  console.log(state.subscriptions);
   const handleAddEmail = async (e: FormEvent) => {
     e.preventDefault();
 

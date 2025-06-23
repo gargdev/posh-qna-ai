@@ -156,7 +156,11 @@ export const organizationApi = {
         "/organization/create",
         organization,
       );
-      return handleApiResponse(response);
+      // The backend returns { success: true, organization: { ... } }
+      if (response.data && response.data.organization) {
+        return response.data.organization;
+      }
+      throw new Error("Invalid response from server");
     } catch (error) {
       handleApiError(error);
     }

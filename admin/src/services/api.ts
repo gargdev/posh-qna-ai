@@ -88,36 +88,6 @@ const handleApiError = (error: unknown): never => {
   throw new Error("An unexpected error occurred");
 };
 
-// Authentication API
-// export const authApi = {
-//   login: async (email: string, password: string): Promise<void> => {
-//     try {
-//       const response = await apiClient.post('/login', { email, password });
-//       return handleApiResponse(response);
-//     } catch (error) {
-//       handleApiError(error);
-//     }
-//   },
-
-//   logout: async (): Promise<void> => {
-//     try {
-//       const response = await apiClient.post('/logout');
-//       return handleApiResponse(response);
-//     } catch (error) {
-//       handleApiError(error);
-//     }
-//   },
-
-//   checkAuth: async (): Promise<boolean> => {
-//     try {
-//       const response = await apiClient.get('/auth/check');
-//       return handleApiResponse(response);
-//     } catch (error) {
-//       return false;
-//     }
-//   },
-// };
-
 // New adminAuthApi:
 export const adminAuthApi = {
   login: async (email: string, password: string) => {
@@ -199,18 +169,24 @@ export const subscriptionApi = {
   add: async (email: string): Promise<Subscription> => {
     try {
       const response = await apiClient.post("/subscription/add", { email });
-      return handleApiResponse(response);
+      const result = handleApiResponse<Subscription>(response);
+      if (!result) throw new Error("No subscription returned");
+      return result;
     } catch (error) {
       handleApiError(error);
+      throw error; // This line is unreachable, but satisfies TypeScript
     }
   },
 
   list: async (): Promise<Subscription[]> => {
     try {
       const response = await apiClient.get("/subscription/list");
-      return handleApiResponse(response);
+      const result = handleApiResponse<Subscription[]>(response);
+      if (!result) throw new Error("No subscriptions returned");
+      return result;
     } catch (error) {
       handleApiError(error);
+      throw error;
     }
   },
 

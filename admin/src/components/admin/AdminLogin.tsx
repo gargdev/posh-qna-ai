@@ -1,7 +1,7 @@
 import React, { useState, type FormEvent } from 'react';
 import { Mail, Lock, Shield, Eye, EyeOff } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { useNotification } from '../../contexts/NotificationContext';
+import { useNotification } from '../../contexts/useNotifications';
 import LoadingSpinner from '../ui/LoadingSpinner';
 
 const AdminLogin: React.FC = () => {
@@ -22,7 +22,7 @@ const AdminLogin: React.FC = () => {
 
     try {
       await actions.login(email, password);
-    } catch (error) {
+    } catch {
       // Error is already handled in context and displayed via notifications
     }
   };

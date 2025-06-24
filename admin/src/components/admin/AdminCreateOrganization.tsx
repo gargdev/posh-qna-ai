@@ -1,9 +1,8 @@
 import React, { useState, type FormEvent } from "react";
 import { Building2, Globe, Mail, Plus, X } from "lucide-react";
 import { useAdmin } from "../../contexts/AdminContext";
-import { useNotification } from "../../contexts/NotificationContext";
+import { useNotification } from "../../contexts/useNotifications";
 import LoadingSpinner from "../ui/LoadingSpinner";
-import AdminOrganizations from "./AdminOrganizations";
 
 const AdminCreateOrganization: React.FC<{
   onOrgAdded?: (name: string) => void;
@@ -79,7 +78,7 @@ const AdminCreateOrganization: React.FC<{
       setOrganizers([]);
       setDomainInput("");
       setOrganizerInput("");
-    } catch (error) {
+    } catch  {
       // Error is already handled in context
     }
   };

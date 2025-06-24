@@ -1,6 +1,6 @@
 import React from "react";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
-import { useNotification } from "../../contexts/NotificationContext";
+import { useNotification } from "../../contexts/useNotifications";
 
 const NotificationContainer: React.FC = () => {
   const { notifications, removeNotification } = useNotification();

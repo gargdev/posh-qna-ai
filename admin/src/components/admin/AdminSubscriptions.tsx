@@ -1,11 +1,11 @@
-import React, { useState, useEffect, type FormEvent } from 'react';
-import { Mail, Plus, X, Download, Upload, Users, Loader } from 'lucide-react';
-import { useAdmin } from '../../contexts/AdminContext';
-import { useNotification } from '../../contexts/NotificationContext';
-import { downloadSampleCsv } from '../../services/api';
+import React, { useState, type FormEvent } from "react";
+import { Mail, Plus, X, Download, Upload, Users, Loader } from "lucide-react";
+import { useAdmin } from "../../contexts/AdminContext";
+import { useNotification } from "../../contexts/useNotifications";
+import { downloadSampleCsv } from "../../services/api";
 
 const AdminSubscriptions: React.FC = () => {
-  const [emailInput, setEmailInput] = useState('');
+  const [emailInput, setEmailInput] = useState("");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -13,24 +13,26 @@ const AdminSubscriptions: React.FC = () => {
   const { state, actions } = useAdmin();
   const { showSuccess, showError } = useNotification();
 
-  // Fetch subscriptions on mount
-  useEffect(() => {
-    actions.fetchSubscriptions();
-  }, []);
+  // // Fetch subscriptions on mount
+  // useEffect(() => {
+  //   actions.fetchSubscriptions();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
+
   console.log(state.subscriptions);
   const handleAddEmail = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!emailInput.trim()) {
-      showError('Validation Error', 'Email is required');
+      showError("Validation Error", "Email is required");
       return;
     }
 
     try {
       await actions.addSubscription(emailInput.trim().toLowerCase());
-      showSuccess('Success', 'Email added successfully!');
-      setEmailInput('');
-    } catch (error) {
+      showSuccess("Success", "Email added successfully!");
+      setEmailInput("");
+    } catch {
       // Error is already handled in context
     }
   };
@@ -38,8 +40,8 @@ const AdminSubscriptions: React.FC = () => {
   const handleRemoveEmail = async (email: string) => {
     try {
       await actions.removeSubscription(email);
-      showSuccess('Success', 'Email removed successfully!');
-    } catch (error) {
+      showSuccess("Success", "Email removed successfully!");
+    } catch {
       // Error is already handled in context
     }
   };
@@ -47,9 +49,9 @@ const AdminSubscriptions: React.FC = () => {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -61,26 +63,29 @@ const AdminSubscriptions: React.FC = () => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.name.toLowerCase().endsWith('.csv')) {
+      if (droppedFile.name.toLowerCase().endsWith(".csv")) {
         setCsvFile(droppedFile);
       } else {
-        showError('Invalid File Type', 'Please select a CSV file only.');
+        showError("Invalid File Type", "Please select a CSV file only.");
       }
     }
   };
 
   const handleCsvUpload = async () => {
     if (!csvFile) {
-      showError('No File Selected', 'Please select a CSV file to upload.');
+      showError("No File Selected", "Please select a CSV file to upload.");
       return;
     }
 
     try {
       await actions.uploadCsvSubscriptions(csvFile, setUploadProgress);
-      showSuccess('Upload Successful', 'CSV file has been processed successfully!');
+      showSuccess(
+        "Upload Successful",
+        "CSV file has been processed successfully!"
+      );
       setCsvFile(null);
       setUploadProgress(0);
-    } catch (error) {
+    } catch {
       // Error is already handled in context
       setUploadProgress(0);
     }
@@ -94,8 +99,12 @@ const AdminSubscriptions: React.FC = () => {
           <Users className="w-5 h-5 text-green-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Manage Subscriptions</h2>
-          <p className="text-sm text-gray-600">Add and manage subscriber emails</p>
+          <h2 className="text-xl font-bold text-gray-900">
+            Manage Subscriptions
+          </h2>
+          <p className="text-sm text-gray-600">
+            Add and manage subscriber emails
+          </p>
         </div>
       </div>
 
@@ -116,7 +125,7 @@ const AdminSubscriptions: React.FC = () => {
                 onChange={(e) => setEmailInput(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                 placeholder="e.g., user@gmail.com"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddEmail(e)}
+                onKeyPress={(e) => e.key === "Enter" && handleAddEmail(e)}
                 disabled={state.loading.subscriptions}
               />
             </div>
@@ -135,7 +144,9 @@ const AdminSubscriptions: React.FC = () => {
       {/* CSV Upload Section */}
       <div className="space-y-4 mb-8">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-gray-700">Bulk Upload CSV</label>
+          <label className="text-sm font-semibold text-gray-700">
+            Bulk Upload CSV
+          </label>
           <button
             type="button"
             onClick={downloadSampleCsv}
@@ -150,10 +161,10 @@ const AdminSubscriptions: React.FC = () => {
         <div
           className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-200 ${
             dragActive
-              ? 'border-green-400 bg-green-50'
+              ? "border-green-400 bg-green-50"
               : csvFile
-              ? 'border-green-300 bg-green-50'
-              : 'border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50'
+              ? "border-green-300 bg-green-50"
+              : "border-gray-300 bg-gray-50 hover:border-green-400 hover:bg-green-50"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -185,8 +196,12 @@ const AdminSubscriptions: React.FC = () => {
                   <Upload className="w-6 h-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">Drop CSV file here</p>
-                  <p className="text-sm text-gray-500">Format: name,email columns</p>
+                  <p className="font-semibold text-gray-900">
+                    Drop CSV file here
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Format: name,email columns
+                  </p>
                 </div>
               </>
             )}
@@ -246,7 +261,9 @@ const AdminSubscriptions: React.FC = () => {
           <div className="text-center py-12">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500 font-medium">No subscribers yet</p>
-            <p className="text-sm text-gray-400 mt-1">Add your first subscriber to get started</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Add your first subscriber to get started
+            </p>
           </div>
         ) : (
           <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -259,7 +276,9 @@ const AdminSubscriptions: React.FC = () => {
                   <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-lg">
                     <Mail className="w-4 h-4 text-green-600" />
                   </div>
-                  <span className="font-medium text-gray-900 truncate">{sub.email}</span>
+                  <span className="font-medium text-gray-900 truncate">
+                    {sub.email}
+                  </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-500 hidden sm:inline">

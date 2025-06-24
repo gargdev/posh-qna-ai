@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LogOut, FileText, Calendar, Shield } from "lucide-react";
 import { useAdmin } from "../../contexts/AdminContext";
-import { useNotification } from "../../contexts/NotificationContext";
+import { useNotification } from "../../contexts/useNotifications";
 import AdminLogin from "./AdminLogin";
 import AdminFileUpload from "./AdminFileUpload";
 import AdminCreateOrganization from "./AdminCreateOrganization";
@@ -21,6 +21,7 @@ const AdminDashboard: React.FC = () => {
       actions.fetchSubscriptions();
       actions.fetchOrganizations();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.isAuthenticated]);
 
   // Highlight new org for 2 seconds

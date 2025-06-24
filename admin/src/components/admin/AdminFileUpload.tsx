@@ -1,7 +1,7 @@
 import React, { useState, type ChangeEvent } from 'react';
 import { Upload, FileText, Loader } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { useNotification } from '../../contexts/NotificationContext';
+import { useNotification } from '../../contexts/useNotifications';
 import { formatFileSize } from '../../services/api';
 
 const AdminFileUpload: React.FC = () => {
@@ -59,7 +59,7 @@ const AdminFileUpload: React.FC = () => {
       showSuccess('Upload Successful', `${file.name} has been uploaded and processed successfully.`);
       setFile(null);
       setUploadProgress(0);
-    } catch (error) {
+    } catch {
       // Error is already handled in context
       setUploadProgress(0);
     }

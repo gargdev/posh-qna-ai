@@ -17,7 +17,9 @@ import morgan from "morgan";
 import crypto from "crypto";
 import routes from "./routes/index";
 import { connectDB } from "./utils/db";
-import './utils/passport'
+// import './utils/passport'
+import './config/passport';
+
 
 console.log("🚀 Initializing Express application...");
 const app = express();

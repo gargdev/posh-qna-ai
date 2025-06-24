@@ -1,102 +1,84 @@
-import { Request, Response, NextFunction } from 'express';
-import passport from 'passport';
-import { Organization } from '../models/Organization';
-import { Subscription } from '../models/Subscription';
+import { Request, Response, NextFunction } from "express";
+import passport from "passport";
+// import bcrypt from "bcryptjs";
+// import { User } from "../models/user";
 
-export const googleAuth = (req: Request, res: Response, next: NextFunction) => {
-  console.log('🔐 Initiating Google OAuth flow');
-  passport.authenticate('google', {
-     scope: ['profile', 'email'],
-     prompt: 'select_account' ,
-     state: req.query.redirect ? encodeURIComponent(req.query.redirect as string) : undefined,
-    })(req, res, next);
+export const localLogin = (req: Request, res: Response, next: NextFunction) => {
+  passport.authenticate("local", (err: any, user: any, info: any) => {
+    if (err) return next(err);
+    if (!user) return res.status(401).json({ message: info?.message });
+
+    req.login(user, (err) => {
+      if (err) return next(err);
+      res.json({
+        user: {
+          displayName: user.displayName,
+          email: user.email,
+          isSubscribed: user.isSubscribed,
+          chatCredits: user.chatCredits,
+        },
+      });
+    });
+  })(req, res, next);
 };
 
-export const googleAuthCallback = async (req: Request, res: Response) => {
-  console.log('🔐 Google OAuth callback processed');
-  const user = req.user as any;
-  console.log(`🔑 Processing Google OAuth profile for ${user?.email}`);
-  // Validate email domain
-  try {
-    const organizations = await Organization.find();
-    const subscription = await Subscription.findOne({ email: user.email.toLowerCase().trim() });
-    
-    if (organizations.length === 0 && !subscription) {
-      console.log('✅ No organizations, allowing login');
-    } else {
-      const userEmail = user.email.toLowerCase().trim();
-      const userDomain = userEmail.split('@')[1];
-      const isOrganizer = organizations.some((org) =>
-        org.organizers.map((o) => o.toLowerCase().trim()).includes(userEmail),
-      );
-      const isDomainAllowed = organizations.some((org) =>
-        org.domains.map((d) => d.toLowerCase().trim()).includes(userDomain),
-      );
-
-      const hasSubscription = !!subscription;
-
-      if (!isOrganizer && !isDomainAllowed && !hasSubscription) {
-        console.error(`❌ User ${userEmail} not allowed (domain: ${userDomain})`);
-        await req.logout(() => {});
-        return res.status(403).json({ error: 'Email domain or user not authorized' });
-      }
-      console.log(`✅ User ${userEmail} allowed (organizer: ${isOrganizer}, domain: ${userDomain})`);
-    }
-  } catch (err: any) {
-    console.error('❌ Error checking organization domains:', err.message);
-    await req.logout(() => {});
-    return res.status(500).json({ error: 'Failed to verify access' });
+export const googleAuth = (req: Request, res: Response, next: NextFunction) => {
+  // save where to go after login
+  if (req.query.redirect) {
+    (req.session as any).returnTo = req.query.redirect;
   }
 
-  const redirect = req.query.state
-    ? decodeURIComponent(req.query.state as string)
-    : 'http://localhost:5173';
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    // force account selection & re-consent:
+    prompt: 'select_account consent',
+    accessType: 'offline',            // if you need refresh tokens
+  })(req, res, next);
+};
+
+export const googleCallback = passport.authenticate("google", {
+  failureRedirect: "/login",
+  session: true,
+});
+
+export const googleRedirect = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // pull the returnTo off session if present
+  const redirect =
+    (req.session as any).returnTo ||
+    process.env.CLIENT_URL! ||
+    "http://localhost:5173";
+
+  // clear it so it doesn’t hang around
+  delete (req.session as any).returnTo;
+
   res.redirect(redirect);
 };
 
-
-export const getCurrentUser = (req: Request, res: Response) => {
-  console.log('🔍 Fetching current user', req.user || "No user");
-  if (req.user) {
-    res.json({ user: req.user });
-  } else {
-    res.json({ user: null });
+export const getCurrentUser = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    if (req.user) {
+      res.json({ user: req.user });
+    } else {
+      res.json({ user: null });
+    }
+  } catch (err) {
+    next(err);
   }
 };
 
-// export const logout = (req: Request, res: Response) => {
-//   console.log('🔓 Logging out user');
-//   req.logout((err) => {
-//     if (err) {
-//       console.error('❌ Logout error:', err);
-//       return res.status(500).json({ error: 'Logout failed' });
-//     }
-//     res.redirect('http://localhost:5173');
-//   });
-// };
-
 export const logout = (req: Request, res: Response) => {
-  console.log('🔓 Logging out user');
   req.logout((err) => {
-    if (err) {
-      console.error('❌ Logout error:', err);
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    // Destroy the session
-    req.session.destroy((err) => {
-      if (err) {
-        console.error('❌ Session destroy error:', err);
-        return res.status(500).json({ error: 'Session destroy failed' });
-      }
-      console.log('✅ Session destroyed');
-      // Clear the connect.sid cookie
-      res.clearCookie('connect.sid', {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
-      // Return JSON instead of redirect to avoid Axios issues
+    if (err) return res.status(500).json({ message: "Logout failed" });
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
       res.json({ success: true });
     });
   });

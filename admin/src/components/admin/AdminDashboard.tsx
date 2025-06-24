@@ -90,90 +90,91 @@ const AdminDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="space-y-8">
             <AdminCreateOrganization onOrgAdded={setLastAddedOrg} />
-            <AdminFileUpload />
+            <AdminOrganizations highlightOrgName={lastAddedOrg ?? undefined} />
           </div>
 
           {/* Right Column */}
           <div className="space-y-8">
-            <AdminOrganizations highlightOrgName={lastAddedOrg ?? undefined} />
             <AdminSubscriptions />
+          </div>
+        </div>
 
-            {/* Documents List */}
-            <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 lg:p-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <h2 className="text-xl font-bold text-gray-900">
-                  Uploaded Documents
-                </h2>
+        <div className="space-y-8">
+          <AdminFileUpload />
+          {/* Documents List */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6 lg:p-8">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-xl">
+                <FileText className="w-5 h-5 text-blue-600" />
               </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Uploaded Documents
+              </h2>
+            </div>
 
-              {state.loading.documents ? (
-                <div className="text-center py-12">
-                  <LoadingSpinner
-                    size="lg"
-                    className="text-gray-400 mx-auto mb-4"
-                  />
-                  <p className="text-gray-500">Loading documents...</p>
-                </div>
-              ) : state.documents.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">
-                    No documents uploaded yet
-                  </p>
-                  <p className="text-sm text-gray-400 mt-1">
-                    Upload your first PDF to get started
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {state.documents.map((doc, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors duration-200"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg">
-                          <FileText className="w-4 h-4 text-red-600" />
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-900 truncate block">
-                            {doc.filename}
-                          </span>
-                          {doc.chunks && (
-                            <span className="text-xs text-gray-500">
-                              {doc.chunks} chunks processed
-                            </span>
-                          )}
-                        </div>
+            {state.loading.documents ? (
+              <div className="text-center py-12">
+                <LoadingSpinner
+                  size="lg"
+                  className="text-gray-400 mx-auto mb-4"
+                />
+                <p className="text-gray-500">Loading documents...</p>
+              </div>
+            ) : state.documents.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 font-medium">
+                  No documents uploaded yet
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Upload your first PDF to get started
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {state.documents.map((doc, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg">
+                        <FileText className="w-4 h-4 text-red-600" />
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        <span className="hidden sm:inline">
-                          {new Date(doc.uploadedAt).toLocaleDateString()}
+                      <div>
+                        <span className="font-medium text-gray-900 truncate block">
+                          {doc.filename}
                         </span>
-                        <span className="sm:hidden">
-                          {new Date(doc.uploadedAt).toLocaleDateString(
-                            "en-US",
-                            {
-                              month: "short",
-                              day: "numeric",
-                            },
-                          )}
-                        </span>
+                        {doc.chunks && (
+                          <span className="text-xs text-gray-500">
+                            {doc.chunks} chunks processed
+                          </span>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <Calendar className="w-4 h-4" />
+                      <span className="hidden sm:inline">
+                        {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </span>
+                      <span className="sm:hidden">
+                        {new Date(doc.uploadedAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+        </div>
         </div>
       </div>
     </div>
